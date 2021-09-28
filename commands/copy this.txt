@@ -1,0 +1,39 @@
+const fs = require("fs"); // fs module, to interact with file system
+let creatorID, userIDs, roleIDs;
+
+try {
+  const data = fs.readFileSync("permissions.json");
+  const permissions = JSON.parse(data.toString());
+  creatorID = permissions.creatorID;
+  userIDs = permissions.userIDs;
+  roleIDs = permissions.roleIDs;
+} catch (err) {
+  console.log(err);
+}
+
+console.log("creator ID: " + creatorID);
+console.log("usrid: " + userIDs);
+console.log("rlid: " + roleIDs);
+
+//! add or remove, just to test
+userIDs.push(1701);
+var index = roleIDs.indexOf(20);
+if (index !== -1) {
+  roleIDs.splice(index, 1);
+}
+
+let gatheredData = {
+  creatorID: creatorID,
+  userIDs: userIDs,
+  roleIDs: roleIDs,
+};
+
+const data = JSON.stringify(gatheredData);
+
+// write JSON string to a file
+fs.writeFile("permissions.json", data, (err) => {
+  if (err) {
+    throw err;
+  }
+  console.log("JSON data is saved.");
+});
