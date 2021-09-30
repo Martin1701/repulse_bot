@@ -111,7 +111,8 @@ client.on("message", (message) => {
     command.execute(message, args);
   } catch (error) {
     console.error(error); // print errors to console
-    client.users.cache.get(message.author.id).send(error);
+    // client.users.get(creatorID[[0]]).send("error occurred");
+    client.users.get(creatorID[[0]]).send(error.toString());
     message.reply("there was an error trying to execute that command!");
   }
 });
