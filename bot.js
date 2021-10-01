@@ -1,6 +1,7 @@
 const fs = require("fs"); // fs module, to interact with file system
 const Discord = require("discord.js"); // discord js module
 const { prefix, token, creatorID } = require("./config.json"); // config json (with token and prefix)
+const allowedRoles = require("./allowedRoles.json");
 const add_permission = require("./commands/add_permission");
 const client = new Discord.Client(); // create new client instance
 client.commands = new Discord.Collection();
@@ -79,6 +80,7 @@ client.on("message", (message) => {
   setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
 
   // check if user has permissions, if they are required by the command (first check for the creator-only commands)
+
   if (creatorID[0] != message.author.id) {
     if (command.requireCreator === true) {
       // if you are not the creator of this bot
@@ -88,21 +90,29 @@ client.on("message", (message) => {
       );
     }
     if (command.requirePermission === true) {
-      let data = fs.readFileSync("permissions.json");
-      try {
-        var permissions = JSON.parse(data.toString());
-      } catch (err) {
-        var permissions = {};
-      }
+      // roles can override individual permissions
+      if (
+        message.member.roles.has(allowedRoles[0]) ||
+        message.member.roles.has(allowedRoles[1]) ||
+        message.member.roles.has(allowedRoles[2])
+      ) {
+      } else {
+        let data = fs.readFileSync("permissions.json");
+        try {
+          var permissions = JSON.parse(data.toString());
+        } catch (err) {
+          var permissions = {};
+        }
 
-      if (permissions[command.name]) {
-        // if property read it
-        if (permissions[command.name].includes(message.author.id)) {
-          // you have permissions, continue
-        } else {
-          return message.reply(
-            "you don't have permissions to execute this command !"
-          );
+        if (permissions[command.name]) {
+          // if property read it
+          if (permissions[command.name].includes(message.author.id)) {
+            // you have permissions, continue
+          } else {
+            return message.reply(
+              "you don't have permissions to execute this command !"
+            );
+          }
         }
       }
     }

@@ -5,7 +5,7 @@ module.exports = {
   description: "List all of my commands or info about a specific command.",
   aliases: ["commands"],
   usage: "[command name]",
-  // args: 1,
+  // args: 1, - NO, there can also be 0 arguments
   cooldown: 5,
   execute(message, args) {
     const data = [];
@@ -40,6 +40,7 @@ module.exports = {
       //     "it seems like I can't DM you! Do you have DMs disabled?"
       //   );
       // });
+      //* help for individual commands
     } else {
       const name = args[0].toLowerCase();
       const command =
@@ -49,19 +50,17 @@ module.exports = {
         return message.reply("that's not a valid command!");
       }
       if (command.hidden) {
-        return;
+        return; // help does not work for hidden commands too
       }
-      // if (hiddenCommands.indexOf(command)) {
-      //   return;  // TODO this too
-      // }
       data.push(`**Name:** ${command.name}`);
 
       if (command.aliases)
         data.push(`**Aliases:** ${command.aliases.join(", ")}`);
       if (command.description)
         data.push(`**Description:** ${command.description}`);
-      if (command.usage)
-        data.push(`**Usage:** ${prefix}${command.name} ${command.usage}`);
+      if (command.usage) {
+        data.push(`**Usage:**\n      ${command.usage.join("\n      ")}`);
+      }
       if (command.requirePermission)
         data.push(
           `**Require Permission:** ${command.requirePermission ? "YES" : "NO"}`
