@@ -1,12 +1,14 @@
+//! command disabled due to personal reasons
+//! using .txt prefix will still save it for later, but bot will not use it, simple
 const Discord = require("discord.js");
 const { creatorID } = require("../config.json");
 const https = require("https");
 let fs = require("fs");
 const supportedFileTypes = [".png", ".jpg", ".pdf", ".docx", ".pptx", ".txt"];
 module.exports = {
-  name: "files",
+  name: "file",
   description: "command to save some files",
-  aliases: ["file"],
+  aliases: ["files"],
   args: 1,
   usage: [
     "[alias]  => get file by name",
@@ -26,12 +28,12 @@ module.exports = {
     if (args[0].toLowerCase() == "list") {
       let fileArr = [];
       for (const key in files) {
-        if (files[key] != "") {
+        if (files[key]) {
           fileArr.push(`${key}: ${files[key]}`);
         }
       }
       return message.reply(
-        `here's a list of all files: \n ${fileArr.join("\n")}`
+        `here's a list of all files:\n${fileArr.join("\n")}`
       );
     }
     if (args[0].toLowerCase() == "remove") {
@@ -84,7 +86,7 @@ module.exports = {
             `I'm sorry this file type is not supported`
           );
         }
-        if (files[fileName] != "") {
+        if (files[fileName]) {
           fs.unlinkSync(`./files/${files[fileName]}`); // remove old file before downloading new one
         }
         const file = fs.createWriteStream(`./files/${nameOfFile}`);
@@ -119,7 +121,7 @@ module.exports = {
           files: [`files/${files[fileName]}`],
         });
       } else {
-        return message.reply("Sorry, I don't have any file for this subject");
+        return message.reply("Sorry, I don't have any file with this alias");
       }
     }
   },

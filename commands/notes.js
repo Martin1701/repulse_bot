@@ -3,7 +3,6 @@ const { creatorID } = require("../config.json");
 const https = require("https");
 let fs = require("fs");
 const supportedFileTypes = [".png", ".jpg", ".pdf", ".docx", ".pptx", ".txt"];
-const allowedRoles = require("../allowedRoles.json");
 module.exports = {
   name: "notes",
   description: "notes for subjects",
@@ -33,7 +32,7 @@ module.exports = {
         }
       }
       return message.reply(
-        `here's a list of all subjects and their files: \n ${subjectArr.join(
+        `here's a list of all subjects and their files:\n${subjectArr.join(
           "\n"
         )}`
       );
@@ -64,30 +63,23 @@ module.exports = {
           })
           .then((message) => {
             message = message.first();
-            if (message.content) {
-              if (subjects[message.content.toUpperCase()]) {
-                // proceed only if subject exists
-                // add .toUppercase if checking for words
-                if (subjects[message.content.toUpperCase] != "") {
-                  // if there is remove old file before downloading new one
-                  fs.unlinkSync(
-                    `notes/${subjects[message.content.toUpperCase()]}`
-                  );
-                }
+            // proceed only if file we want to remove exists, it's name is saved under the subject
+            if (subjects[message.content.toUpperCase()] != "") {
+              // remove file
+              fs.unlinkSync(`notes/${subjects[message.content.toUpperCase()]}`);
 
-                subjects[message.content.toUpperCase()] = ""; // delete file path
-                // save data back to file
-                data = JSON.stringify(subjects);
-                // write JSON string to a file
-                fs.writeFile("./notes/notes.json", data, (err) => {
-                  if (err) {
-                    throw err;
-                  }
-                });
-                return message.channel.send("path successfully removed");
-              }
+              subjects[message.content.toUpperCase()] = ""; // delete file path
+              // save data back to file
+              data = JSON.stringify(subjects);
+              // write JSON string to a file
+              fs.writeFile("./notes/notes.json", data, (err) => {
+                if (err) {
+                  throw err;
+                }
+              });
+              return message.channel.send("file successfully removed");
             } else {
-              return message.channel.send("Terminated");
+              return message.reply("there isn't any file for this subject");
             }
           })
           .catch((collected) => {
@@ -95,14 +87,8 @@ module.exports = {
           });
       });
     } else {
-      //! only creator and allowed roles can upload files
-      const userRoles = message.member.roles;
-      if (
-        message.author.id == creatorID[0] ||
-        userRoles.has(allowedRole[0]) ||
-        userRoles.has(allowedRole[1]) ||
-        userRoles.has(allowedRole[2])
-      ) {
+      //! only creator can upload files (yes, only me)
+      if (message.author.id == creatorID[0]) {
         if (message.attachments.first()) {
           const nameOfFile = message.attachments.first().filename;
           if (
@@ -147,10 +133,33 @@ module.exports = {
         }
       }
       if (subjects[subjectName]) {
+        //! important, files will be sent to dm from now on, it's way more secure and files will get only to the users with permissions who will value our service
         // since now all subjects are declared we just need to check if subject has some file property
-        return message.reply(subjectName + ":", {
-          files: [`./notes/${subjects[subjectName]}`],
-        });
+        // send file to channel (old)
+        // return message.reply(subjectName + ":", {
+        //   files: [`./notes/${subjects[subjectName]}`],
+        // });
+        return message.author
+          .send(
+            `here is your file for: ${subjectName}\n\`please don't share !\` (you don't want to be hurt by my 15 in guns)\nenjoy :smile:`,
+            {
+              files: [`./notes/${subjects[subjectName]}`],
+            },
+            { split: true }
+          )
+          .then(() => {
+            if (message.channel.type === "dm") return;
+            message.reply("I've sent you a DM");
+          })
+          .catch((error) => {
+            console.error(
+              `Could not send help DM to ${message.author.tag}.\n`,
+              error
+            );
+            message.reply(
+              "it seems like I can't DM you! Do you have DMs disabled?"
+            );
+          });
       } else {
         return message.reply("Sorry, I don't have any file for this subject");
       }

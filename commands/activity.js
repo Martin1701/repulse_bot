@@ -8,6 +8,7 @@ module.exports = {
   aliases: ["setActivity"],
   args: true,
   requirePermission: true,
+  requireCreator: true,
   hidden: true,
   execute(message, args) {
     //! TODO this

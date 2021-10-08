@@ -1,8 +1,6 @@
 const fs = require("fs"); // fs module, to interact with file system
 const Discord = require("discord.js"); // discord js module
 const { prefix, token, creatorID } = require("./config.json"); // config json (with token and prefix)
-const allowedRoles = require("./allowedRoles.json");
-const add_permission = require("./commands/add_permission");
 const client = new Discord.Client(); // create new client instance
 client.commands = new Discord.Collection();
 
@@ -88,31 +86,22 @@ client.on("message", (message) => {
       return message.reply(
         `This command can only be executed by <@!${creatorID[0]}>`
       );
-    }
-    if (command.requirePermission === true) {
-      // roles can override individual permissions
-      if (
-        message.member.roles.has(allowedRoles[0]) ||
-        message.member.roles.has(allowedRoles[1]) ||
-        message.member.roles.has(allowedRoles[2])
-      ) {
-      } else {
-        let data = fs.readFileSync("permissions.json");
-        try {
-          var permissions = JSON.parse(data.toString());
-        } catch (err) {
-          var permissions = {};
-        }
+    } else {
+      let data = fs.readFileSync("permissions.json");
+      try {
+        var permissions = JSON.parse(data.toString());
+      } catch (err) {
+        var permissions = {};
+      }
 
-        if (permissions[command.name]) {
-          // if property read it
-          if (permissions[command.name].includes(message.author.id)) {
-            // you have permissions, continue
-          } else {
-            return message.reply(
-              "you don't have permissions to execute this command !"
-            );
-          }
+      if (permissions[command.name]) {
+        // if property read it
+        if (permissions[command.name].includes(message.author.id)) {
+          // you have permissions, continue
+        } else {
+          return message.reply(
+            "you don't have permissions to execute this command !"
+          );
         }
       }
     }

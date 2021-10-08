@@ -1,14 +1,8 @@
 module.exports = {
-  name: "notes",
-  description: "notes for subjects",
-  aliases: ["poznamky"],
-  args: 1,
-  usage: [
-    "[subject] - subject abbreviation ",
-    "[files] - list all subjects with files",
-    "[subjects] - list all available subjects",
-    "[subject] + file - save file under this subject",
-  ],
-  requirePermission: true,
+  name: "commandName",
+  description: "commandDescription",
+  aliases: ["commandAliases"],
+  args: 1, // set to true to ignore argument count
+  usage: ["commandUsage"],
   execute(message, args) {},
 };

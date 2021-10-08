@@ -4,8 +4,8 @@ module.exports = {
   name: "help",
   description: "List all of my commands or info about a specific command.",
   aliases: ["commands"],
-  usage: "[command name]",
-  // args: 1, - NO, there can also be 0 arguments
+  usage: ["[command name]"],
+  args: true, //- NO, (if you don't set arguments, bot will ignore number of arguments)
   cooldown: 5,
   execute(message, args) {
     const data = [];
@@ -46,11 +46,9 @@ module.exports = {
       const command =
         commands.get(name) ||
         commands.find((c) => c.aliases && c.aliases.includes(name));
-      if (!command) {
+      if (!command || command.hidden) {
+        // help should not work for hidden commands
         return message.reply("that's not a valid command!");
-      }
-      if (command.hidden) {
-        return; // help does not work for hidden commands too
       }
       data.push(`**Name:** ${command.name}`);
 
@@ -59,14 +57,16 @@ module.exports = {
       if (command.description)
         data.push(`**Description:** ${command.description}`);
       if (command.usage) {
-        data.push(`**Usage:**\n      ${command.usage.join("\n      ")}`);
+        data.push(`**Usage:**\n       ${command.usage.join("\n      ")}`);
       }
-      if (command.requirePermission)
+      // since permissions are disabled for now
+      /*
+      if (typeof command.requirePermission == "boolean")
         data.push(
           `**Require Permission:** ${command.requirePermission ? "YES" : "NO"}`
         );
+      */
       data.push(`**Cooldown:** ${command.cooldown || 3} second(s)`);
-
       message.channel.send(data, { split: true });
     }
   },
