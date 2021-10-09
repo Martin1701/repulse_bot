@@ -1,8 +1,6 @@
 const fs = require("fs"); // fs module, to interact with file system
 const Discord = require("discord.js"); // discord js module
 const { prefix, token, creatorID } = require("./config.json"); // config json (with token and prefix)
-const allowedRoles = require("./allowedRoles.json");
-const add_permission = require("./commands/add_permission");
 const client = new Discord.Client(); // create new client instance
 client.commands = new Discord.Collection();
 
@@ -24,6 +22,7 @@ client.once("ready", () => {
   console.log("Ready!");
 });
 
+//! music part will be independent of the other part (since it will use reactions, message editing, etc.)
 client.on("message", (message) => {
   // this code will run when message will be sent
   if (!message.content.startsWith(prefix) || message.author.bot) return; // only proceed if message starts with predefined prefix and it was not sent from a bot
@@ -40,14 +39,17 @@ client.on("message", (message) => {
   if (!command) return;
 
   //* i did this :-)
-  if (command.args && typeof command.args == "number") {
+  if (command.args) {
     // check if command requires arguments
     if (!args.length) {
       return message.channel.send(
         `You didn't provide any arguments, ${message.author}!`
       );
     }
-    if (args.length < command.args || args.length > command.args) {
+    if (
+      args.length < command.args ||
+      (args.length > command.args && typeof command.args == "number")
+    ) {
       return message.channel.send(
         `You provided ${args.length} ${
           args.length == 1 ? "argument" : "arguments"
@@ -89,31 +91,22 @@ client.on("message", (message) => {
         `This command can only be executed by <@!${creatorID[0]}>`
       );
     }
-    if (command.requirePermission === true) {
-      // roles can override individual permissions
-      if (
-        message.member.roles.has(allowedRoles[0]) ||
-        message.member.roles.has(allowedRoles[1]) ||
-        message.member.roles.has(allowedRoles[2])
-      ) {
-      } else {
-        let data = fs.readFileSync("permissions.json");
-        try {
-          var permissions = JSON.parse(data.toString());
-        } catch (err) {
-          var permissions = {};
-        }
+  } else {
+    let data = fs.readFileSync("permissions.json");
+    try {
+      var permissions = JSON.parse(data.toString());
+    } catch (err) {
+      var permissions = {};
+    }
 
-        if (permissions[command.name]) {
-          // if property read it
-          if (permissions[command.name].includes(message.author.id)) {
-            // you have permissions, continue
-          } else {
-            return message.reply(
-              "you don't have permissions to execute this command !"
-            );
-          }
-        }
+    if (permissions[command.name]) {
+      // if property read it
+      if (permissions[command.name].includes(message.author.id)) {
+        // you have permissions, continue
+      } else {
+        return message.reply(
+          "you don't have permissions to execute this command !"
+        );
       }
     }
   }
@@ -128,3 +121,19 @@ client.on("message", (message) => {
 });
 // login to Discord with your app's token
 client.login(token);
+
+// used to decrypt ID
+const decrypt = (hash) => {
+  const decipher = crypto.createDecipheriv(
+    algorithm,
+    secretKey,
+    Buffer.from(hash.iv, "hex")
+  );
+
+  const decrpyted = Buffer.concat([
+    decipher.update(Buffer.from(hash.content, "hex")),
+    decipher.final(),
+  ]);
+
+  return decrpyted.toString();
+};
