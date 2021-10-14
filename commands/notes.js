@@ -141,7 +141,7 @@ module.exports = {
         // });
         return message.author
           .send(
-            `here is your file for: ${subjectName}\n\`please don't share !\` (you don't want to be hurt by my 15 in guns)\nenjoy :smile:`,
+            `here is your file for: ${subjectName}\n\`please don't share !\` (you don't want to get hurt by my 15 in guns)\nenjoy :smile:`,
             {
               files: [`./notes/${subjects[subjectName]}`],
             },

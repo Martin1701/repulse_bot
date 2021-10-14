@@ -4,11 +4,17 @@ const { prefix, token, creatorID } = require("./config.json"); // config json (w
 const client = new Discord.Client(); // create new client instance
 client.commands = new Discord.Collection();
 
+const queue = new Map(); // music queue
+
+// read commands directory (javascript files in it)
 const commandFiles = fs
   .readdirSync("./commands")
-  .filter((file) => file.endsWith(".js")); // find all .js (individual commands) files
+  .filter((file) => file.endsWith(".js"));
+
+// exports
 module.exports = {
   client: client,
+  queue: queue,
 };
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`); // load all command files
@@ -38,14 +44,21 @@ client.on("message", (message) => {
   if (!command) return;
 
   //* i did this :-)
-  if (command.args && typeof command.args == "number") {
+  // check for user inputted arguments and number of arguments that command requires
+  // true = unlimited arguments (>= 1)
+  // false = 0 arguments
+  // number = just this number of arguments, no more, no less
+  if (command.args) {
     // check if command requires arguments
     if (!args.length) {
       return message.channel.send(
         `You didn't provide any arguments, ${message.author}!`
       );
     }
-    if (args.length < command.args || args.length > command.args) {
+    if (
+      args.length < command.args ||
+      (args.length > command.args && typeof command.args == "number")
+    ) {
       return message.channel.send(
         `You provided ${args.length} ${
           args.length == 1 ? "argument" : "arguments"
@@ -53,6 +66,7 @@ client.on("message", (message) => {
       );
     }
   }
+
   //
   if (!cooldowns.has(command.name)) {
     cooldowns.set(command.name, new Discord.Collection()); // if command has set cooldown, set cooldown
@@ -62,7 +76,7 @@ client.on("message", (message) => {
   const timestamps = cooldowns.get(command.name);
   const cooldownAmount = (command.cooldown || 3) * 1000; // if command has no predefined cooldown, set 3 second default
 
-  // cooldown control logic (cooldown is separate for each user)
+  //* cooldown control logic (cooldown is separate for each user)
   if (timestamps.has(message.author.id)) {
     const expirationTime = timestamps.get(message.author.id) + cooldownAmount;
     if (now < expirationTime) {
@@ -77,8 +91,7 @@ client.on("message", (message) => {
   timestamps.set(message.author.id, now);
   setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
 
-  // check if user has permissions, if they are required by the command (first check for the creator-only commands)
-
+  //* check permissions
   if (creatorID[0] != message.author.id) {
     if (command.requireCreator === true) {
       // if you are not the creator of this bot
