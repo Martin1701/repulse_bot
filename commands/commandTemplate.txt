@@ -4,5 +4,8 @@ module.exports = {
   aliases: ["commandAliases"],
   args: 1, // set to true to ignore argument count
   usage: ["commandUsage"],
+  requirePermission: true,
+  group: "command group",
+  DM: false,
   execute(message, args) {},
 };

@@ -5,16 +5,20 @@ const client = new Discord.Client(); // create new client instance
 client.commands = new Discord.Collection();
 
 const queue = new Map(); // music queue
-
 // read commands directory (javascript files in it)
-const commandFiles = fs
-  .readdirSync("./commands")
-  .filter((file) => file.endsWith(".js"));
+const commandFiles = fs.readdirSync("./commands").filter((file) => file.endsWith(".js"));
 
-// exports
+// read permissions from file (so it doesn't need to be loaded every time permission check is needed)
+let data = fs.readFileSync("permissions.json");
+try {
+  var permissions = JSON.parse(data.toString());
+} catch (err) {
+  var permissions = {};
+}
 module.exports = {
   client: client,
   queue: queue,
+  permissions: permissions,
 };
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`); // load all command files
@@ -30,49 +34,32 @@ client.once("ready", () => {
 
 client.on("message", (message) => {
   // this code will run when message will be sent
-  if (!message.content.startsWith(prefix) || message.author.bot) return; // only proceed if message starts with predefined prefix and it was not sent from a bot
-
-  const args = message.content.slice(prefix.length).trim().split(/ +/); // remove prefix from message
-  const commandName = args.shift().toLowerCase(); // convert command to loverCase (all commands are loverCase but user can write upperCase)
-  //
+  if (!(message.content.startsWith(prefix) || message.channel.type === "dm") /* || message.author.bot*/) return;
+  const args = message.content.replace(prefix, "").trim().split(/ +/);
+  const commandName = args.shift().toLowerCase(); // convert command to loverCase
   const command =
     client.commands.get(commandName) ||
     client.commands.find(
-      (cmd) => cmd.aliases && cmd.aliases.includes(commandName) // find if the command exists (or alias)
+      (cmd) => cmd.aliases && cmd.aliases.includes(commandName) // check if the command / alias exists
     );
 
   if (!command) return;
 
-  //* i did this :-)
-  // check for user inputted arguments and number of arguments that command requires
-  // true = unlimited arguments (>= 1)
-  // false = 0 arguments
-  // number = just this number of arguments, no more, no less
   if (command.args) {
-    // check if command requires arguments
     if (!args.length) {
-      return message.channel.send(
-        `You didn't provide any arguments, ${message.author}!`
-      );
+      return message.channel.send(`You didn't provide any arguments!`);
     }
-    if (
-      args.length < command.args ||
-      (args.length > command.args && typeof command.args == "number")
-    ) {
-      return message.channel.send(
-        `You provided ${args.length} ${
-          args.length == 1 ? "argument" : "arguments"
-        } (${command.args} needed), ${message.author}!`
-      );
+    if (args.length < command.args && typeof command.args == "number") {
+      // changed from != to <
+      return message.channel.send(`You provided ${args.length} ${args.length == 1 ? "argument" : "arguments"} (${command.args} needed!)`);
     }
   }
 
-  //
   if (!cooldowns.has(command.name)) {
-    cooldowns.set(command.name, new Discord.Collection()); // if command has set cooldown, set cooldown
+    cooldowns.set(command.name, new Discord.Collection());
   }
 
-  const now = Date.now(); // get actual time
+  const now = Date.now(); // get current time
   const timestamps = cooldowns.get(command.name);
   const cooldownAmount = (command.cooldown || 3) * 1000; // if command has no predefined cooldown, set 3 second default
 
@@ -81,11 +68,7 @@ client.on("message", (message) => {
     const expirationTime = timestamps.get(message.author.id) + cooldownAmount;
     if (now < expirationTime) {
       const timeLeft = (expirationTime - now) / 1000;
-      return message.reply(
-        `please wait ${timeLeft.toFixed(
-          1
-        )} more second(s) before reusing the \`${command.name}\` command.`
-      );
+      return message.reply(`please wait ${timeLeft.toFixed(1)} more second(s) before reusing the \`${command.name}\` command.`);
     }
   }
   timestamps.set(message.author.id, now);
@@ -94,11 +77,9 @@ client.on("message", (message) => {
   //* check permissions
   if (creatorID[0] != message.author.id) {
     if (command.requireCreator === true) {
-      // if you are not the creator of this bot
-      // this is the only wa it will work
-      return message.reply(
+      /*return message.reply(
         `This command can only be executed by <@!${creatorID[0]}>`
-      );
+      );*/
     } else {
       let data = fs.readFileSync("permissions.json");
       try {
@@ -108,25 +89,32 @@ client.on("message", (message) => {
       }
 
       if (permissions[command.name]) {
-        // if property read it
         if (permissions[command.name].includes(message.author.id)) {
-          // you have permissions, continue
         } else {
-          return message.reply(
-            "you don't have permissions to execute this command !"
-          );
+          return message.channel.send("you don't have permissions to execute this command !");
         }
       }
     }
   }
+  if (!command.DM && message.channel.type === "dm") {
+    // but cooldowns still work in DM disabled commands, to prevent spamming
+    return message.channel.send(`I'm sorry, but this command doesn't work in DMs`);
+  }
   try {
     command.execute(message, args);
   } catch (error) {
-    console.error(error); // print errors to console
+    //console.error(error);
     // client.users.get(creatorID[[0]]).send("error occurred");
-    client.users.get(creatorID[[0]]).send(error.toString());
-    message.reply("there was an error trying to execute that command!");
+    client.users
+      .get(creatorID[[0]])
+      .send(
+        `**username: **${message.author.username}\n**channel: **${
+          message.channel.type === "dm" ? "dm" : message.channel.name
+        }\n**command: ** ${command.name}\n**arguments: **${args}\n${"```js\n" + error.stack + "```"}`
+      );
+    // client.users.get(creatorID[[0]]).send(console.error(error));
+    message.channel.send("there was an error trying to execute that command!");
   }
 });
-// login to Discord with your app's token
+// login to Discord with your token
 client.login(token);

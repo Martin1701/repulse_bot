@@ -1,6 +1,4 @@
 const Discord = require("discord.js");
-const { type } = require("os");
-// import { client } from "../bot";
 const { client } = require("../bot");
 module.exports = {
   name: "activity",
@@ -10,6 +8,7 @@ module.exports = {
   requirePermission: true,
   requireCreator: true,
   hidden: true,
+  DM: true,
   execute(message, args) {
     //! TODO this
     if (args[0] == "remove") {
@@ -18,11 +17,7 @@ module.exports = {
     } else {
       client.user
         .setActivity(args.join(" "), { type: "PLAYING" })
-        .then((presence) =>
-          message.channel.send(
-            `Activity set to ${presence.game ? presence.game.name : "none"}`
-          )
-        );
+        .then((presence) => message.channel.send(`Activity set to ${presence.game ? presence.game.name : "none"}`));
     }
   },
 };

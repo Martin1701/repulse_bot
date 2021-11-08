@@ -32,9 +32,7 @@ module.exports = {
           fileArr.push(`${key}: ${files[key]}`);
         }
       }
-      return message.reply(
-        `here's a list of all files:\n${fileArr.join("\n")}`
-      );
+      return message.reply(`here's a list of all files:\n${fileArr.join("\n")}`);
     }
     if (args[0].toLowerCase() == "remove") {
       let filter = (m) => m.author.id === message.author.id;
@@ -51,9 +49,7 @@ module.exports = {
               // add .toUppercase if checking for words
               // remove the file first
               if (files[message.content.toUpperCase()]) {
-                fs.unlinkSync(
-                  `./files/${files[message.content.toUpperCase()]}`
-                );
+                fs.unlinkSync(`./files/${files[message.content.toUpperCase()]}`);
               }
               delete files[message.content.toUpperCase()]; // delete file path and alias
               // save data back to file
@@ -77,25 +73,18 @@ module.exports = {
       //! here, everyone can upload files
       if (message.attachments.first()) {
         const nameOfFile = message.attachments.first().filename;
-        if (
-          supportedFileTypes.includes(nameOfFile.slice(nameOfFile.indexOf(".")))
-        ) {
+        if (supportedFileTypes.includes(nameOfFile.slice(nameOfFile.indexOf(".")))) {
           // message.channel.send("file type supported");
         } else {
-          return message.channel.send(
-            `I'm sorry this file type is not supported`
-          );
+          return message.channel.send(`I'm sorry this file type is not supported`);
         }
         if (files[fileName]) {
           fs.unlinkSync(`./files/${files[fileName]}`); // remove old file before downloading new one
         }
         const file = fs.createWriteStream(`./files/${nameOfFile}`);
-        const request = https.get(
-          message.attachments.first().url,
-          function (response) {
-            response.pipe(file);
-          }
-        );
+        const request = https.get(message.attachments.first().url, function (response) {
+          response.pipe(file);
+        });
         if (files[fileName]) {
           // check if files, we want to save data as exists
           files[fileName] = nameOfFile; // save file name into subject (this way we can find them later and keep their original name)
@@ -111,9 +100,7 @@ module.exports = {
           }
         });
         // then return
-        return message.channel.send(
-          `file: ${nameOfFile} successfully uploaded as ${fileName}`
-        );
+        return message.channel.send(`file: ${nameOfFile} successfully uploaded as ${fileName}`);
       }
       if (files[fileName]) {
         // get file

@@ -1,10 +1,11 @@
 const { queue } = require("../bot");
 module.exports = {
   name: "queue",
-  description: "prints song queue",
-  aliases: [],
+  description: "Displays song queue",
+  aliases: ["q"],
   args: 0,
-  usage: ["commandUsage"],
+  group: "music",
+  DM: false,
   execute(message, args) {
     const serverQueue = queue.get(message.guild.id);
     if (!serverQueue) {
@@ -13,7 +14,7 @@ module.exports = {
     const songQueue = [];
     songQueue.push(
       serverQueue.songs
-        .map((song, index) => `${index + 1}: \`${song.title}\``)
+        .map((song, index) => (index == 0 ? `${index + 1}: \`${song.title}\` - now playing` : `${index + 1}: \`${song.title}\``))
         .join("\n")
     );
     message.channel.send("song queue:\n" + songQueue);

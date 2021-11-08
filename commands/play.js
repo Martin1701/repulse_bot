@@ -2,15 +2,16 @@ const ytdl = require("ytdl-core");
 const ytsr = require("ytsr");
 const { client, queue } = require("../bot");
 var getYoutubeTitle = require("get-youtube-title");
-const { type } = require("os");
 module.exports = {
   name: "play",
   description: "plays song",
   aliases: [""],
   args: true, // set to true to ignore argument count
-  usage: ["youtube url", "song name"],
+  usage: ["[youtube url]", "[song name]"],
   requirePermission: true,
-  // if someone disconnects the bot, remove serverQueue
+  aliases: ["s"],
+  group: "music",
+  DM: false,
   execute(message, args) {
     const serverQueue = queue.get(message.guild.id);
 
@@ -22,9 +23,7 @@ module.exports = {
     // check permission for bot
     const permissions = voiceChannel.permissionsFor(client.user);
     if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
-      return message.channel.send(
-        "sorry, I don't have permissions for this channel"
-      );
+      return message.channel.send("sorry, I don't have permissions for this channel");
     }
 
     if (!serverQueue) {
@@ -33,10 +32,11 @@ module.exports = {
         textChannel: message.channel,
         voiceChannel: voiceChannel,
         connection: null,
+        broadcast: null,
         songs: [],
-        search: [],
+        /*search: [],
         volume: 5,
-        playing: true,
+        playing: true, not used at all */
       };
       queue.set(message.guild.id, queueConstruct);
 
@@ -54,17 +54,20 @@ module.exports = {
         }
       });
     } else {
-      if (message.channel != serverQueue.textChannel) {
-        // if user used another text channel, use that channel for messages from now on
-        serverQueue.textChannel = message.channel;
-      }
-      getSong(args, function (song) {
-        serverQueue.songs.push(song);
-        serverQueue.textChannel.send(`\`${song.title}\` was added to queue`);
-        if (serverQueue.songs.length == 1) {
-          play(message.guild, serverQueue.songs[0]);
+      if (message.member.voiceChannel == serverQueue.voiceChannel) {
+        // message author voice channel and bt voice channel must be the same
+        if (message.channel != serverQueue.textChannel) {
+          // if user used another text channel, use that channel for messages from now on
+          serverQueue.textChannel = message.channel;
         }
-      });
+        getSong(args, function (song) {
+          serverQueue.songs.push(song);
+          serverQueue.textChannel.send(`\`${song.title}\` was added to queue`);
+          if (serverQueue.songs.length == 1) {
+            play(message.guild, serverQueue.songs[0]);
+          }
+        });
+      }
     }
   },
 };
@@ -87,14 +90,12 @@ function play(guild, song) {
     // there's no leaveTimer
   }
 
-  // console.log(serverQueue);
   const stream = ytdl(song.url, {
     filter: "audioonly",
   });
   const broadcast = client.createVoiceBroadcast();
-  broadcast.playStream(stream).on("end", (end) => {
-    // const serverQueue = queue.get(message.guild.id);
-    // console.log(serverQueue.songs);
+  serverQueue.broadcast = broadcast;
+  broadcast.playStream(stream).on("end", () => {
     serverQueue.songs.shift(); // pop front //1
     play(guild, serverQueue.songs[0]); // play next
   });
@@ -115,9 +116,14 @@ function leave_with_timeout(guild_id) {
 // when someone disconnects the bot, delete serverQueue
 client.on("voiceStateUpdate", function (oldMember, newMember) {
   const guildID = oldMember.guild.id;
-  if (newMember.voiceChannelID === null && client.user.id == oldMember.id) {
+  const serverQueue = queue.get(guildID);
+  if (
+    /*newMember.voiceChannelID === null && */ client.user.id == oldMember.id &&
+    oldMember.voiceChannelID != undefined &&
+    oldMember.voiceChannelID != newMember.voiceChannelID
+  ) {
     // if user disconnected and the user is bot, delete music log, since music is no longer playing
-    const serverQueue = queue.get(guildID);
+    //* do this even when the bot was moved (for now)
     if (serverQueue) {
       serverQueue.textChannel.send(`I was disconnected from channel. Bye!`);
       queue.delete(guildID);
@@ -126,8 +132,7 @@ client.on("voiceStateUpdate", function (oldMember, newMember) {
 });
 function getSong(args, callback) {
   // check if argument is video url or name
-  const regExp =
-    /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\?v=)([^#\&\?]*).*/;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\?v=)([^#\&\?]*).*/;
   var match = args[0].match(regExp);
   if (match && match[2].length == 11) {
     // if argument is youtube video url
